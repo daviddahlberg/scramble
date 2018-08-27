@@ -1,0 +1,133 @@
+#!/bin/sh
+#
+# Copyright (c) 2018 David Dahlberg <dyn+code@dahlberg.cologne>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+usage () {
+	echo "usage: $(basename $0)" \
+		"[options]" \
+		"[text]" 
+	echo "options: -c code: substitution with codeword"
+	echo "         -d: decrypt" 
+	echo "         -h: help"
+	echo "         -n number: ROT-n substitution"
+	echo "         -v: verbose"
+}
+
+args=$(getopt c:dhn:v $*)
+if [ $? -ne 0 ]; then
+	# Error
+	usage >&2
+	exit 1
+fi
+
+set -- $args
+while [ $# -ne 0 ]; do
+	case "$1" in
+	-c)
+		unset n
+		code="$2"
+		shift
+		shift
+		;;
+	-d)
+		decrypt=true
+		shift
+		;;
+	-h)
+		usage
+		shift
+		exit 1
+		;;
+	-n)
+		unset code
+		n="$(( $2 % 26 ))"
+		shift
+		shift
+		;;
+	-v)
+		verbose=true
+		shift
+		;;
+	--)
+		shift
+		text="$*"
+		break
+		;;
+	esac
+done
+
+# Our alphabet
+alpha='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+# without code(word), use ROT-n 
+if [ -z "$code" ]; then
+	# default to rot13
+	[ -z "$n" ] && n=13
+
+	[ "$verbose" ] && echo "Algorithm: ROT$n" >&2
+
+	# Generate substitution alphabet
+	code=$(echo "$alpha" | cut -c $(($n+1))-26)
+	[ "$n" -gt 0 ] && code=$code$(echo "$alpha" | cut -c 1-$n)
+else
+	# Check for non-asciibethic characters
+	if echo "$code" | grep -qv "^[A-Za-z]*$"; then
+		echo "Invalid codeword: '$code'" >&2
+		exit 1
+	fi
+	[ "$verbose" ] && echo "Algorithm: Monoalphabetic substitution with codeword \"$code\"" >&2
+fi
+
+# now we have a codeword
+
+# make sure we have use the whole alphabet
+code=$(echo "$code" | tr '[:lower:]' '[:upper:]')${alpha}
+# reduce to unique characters
+i=0
+while [ $i -lt 27 ]; do
+	i=$(($i+1))
+	c=$(echo "$code" | cut -c 1 )
+	if [ "$c" ]; then
+		subst=${subst}${c}
+		code=$(echo "$code" | sed "s/$c//g")
+	else
+		break;
+	fi
+done
+
+# invert alphabet to decrypt, if requested
+if [ "$decrypt" ]; then
+	[ "$verbose" ] && echo "Inverting input-/output alphabets for decryption" >&2
+	temp="$alpha"
+	alpha="$subst"
+	subst="$temp"
+fi
+
+[ "$verbose" ] && echo "Substitution: [$alpha] -> [$subst]" >&2
+
+# add loweruppercase lettering
+alpha=$alpha$(echo $alpha | tr '[:upper:]' '[:lower:]')
+subst=$subst$(echo $subst | tr '[:upper:]' '[:lower:]')
+
+
+# Do the substitution
+if [ "$text" ]; then
+	[ "$verbose" ] && echo "Input:  $text" >&2
+	[ "$verbose" ] && printf "Output: "
+	echo "$text" | tr "$alpha" "$subst"
+else
+	# take text from stdin
+	tr "$alpha" "$subst"
+fi

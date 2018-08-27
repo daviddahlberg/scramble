@@ -1,0 +1,71 @@
+.\"$OpenBSD$
+.\"
+.\"Copyright (c) 2018 David Dahlberg <dyn+code@dahlberg.cologne>
+.\"
+.\"Permission to use, copy, modify, and distribute this software for any
+.\"purpose with or without fee is hereby granted, provided that the above
+.\"copyright notice and this permission notice appear in all copies.
+.\"
+.\"THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\"WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\"MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\"ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\"WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\"ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\"OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.Dd $Mdocdate: May 7 2018 $
+.Dt SCRAMBLE 1
+.Os
+.Sh NAME
+.Nm scramble
+.Nd scrambles text with different substitution schemes
+.Sh SYNOPSIS
+.Nm
+.Op Fl c Ar code
+.Op Fl d
+.Op Fl n Ar number
+.Op Fl v
+.Op Ar text
+.Nm
+.Op Fl h
+.Sh DESCRIPTION
+.Nm
+scrambles text with different substitution alphabeths.
+By default, it reads applies ROT-13 "encryption" to
+.Xr stdio 3 .
+.Pp
+The following options are available:
+.Bl -tag -width Ds
+.It Fl c Ar code
+Use monoalphabetic substitution with keyword (caesar with codeword).
+.Pp
+If the codword comprises all 26 characters of the alphabet, of course this
+will become a generic monoalphabetic substitution cipher.
+.It Fl d
+Backwards-encrypt (decrypt).
+.It Op n Ar number
+Apply Caesar cipher with rotation of
+.Ar number
+characters (ROT-n).
+.Op Fl v
+Verbose output.
+.Op Ar text
+Scramble
+.Ar text
+instead of standard input.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh EXAMPLES
+Scramble a sentence with ROT-13
+.Dl $ echo "The quick brown fox jumps over the lazy dog" | scramble
+Scramble a sentence with monoalphabetic substitution with codeword "CAESAR"
+.Dl $ echo "The quick brown fox jumps over the lazy dog" | scramble -c CAESAR
+Unscramble the same sentence:
+.Dl $ echo "Tfr ougei apmwl bmx huknq mvrp tfr jczy smd" | scramble -c CAESAR -d
+.Sh HISTORY
+The
+.Nm
+utility has been available since 2018.
+.Sh AUTHORS
+.An David Dahlberg Aq Mt dyn+code@dahlberg.cologne
